@@ -173,11 +173,6 @@ text RT = First Execution Time − Arrival Time
 
 ---
 
-## 🏗️ System Architecture
-
-text                     +----------------+                     | User Requests |                     +-------+--------+                             |                             v                  +----------------------+                  | Scheduling Algorithm |                  +----------+-----------+                             |       +---------------------+----------------------+       |                     |                      |       v                     v                      v     FCFS                  SJF                    SRTF                                                    |                                                    v                                       Priority Scheduling                                                    |                                                    v                                    +----------------------+                                    | Result Visualization |                                    +----------------------+ 
-
----
 
 ## 🖥️ Technologies Used
 
