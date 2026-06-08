@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CineQueue – Movie Ticket Booking Scheduler</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red:       #e8222a;
+    --red-dark:  #b01a20;
+    --red-glow:  rgba(232,34,42,0.35);
+    --gold:      #f5c518;
+    --bg:        #0a0a0f;
+    --bg2:       #111118;
+    --bg3:       #1a1a24;
+    --bg4:       #22222e;
+    --border:    rgba(255,255,255,0.08);
+    --text:      #f0eeff;
+    --muted:     #7a7a9a;
+    --card-r:    14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* ── FILM-STRIP TOP BAR ── */
+  .filmstrip {
+    width: 100%;
+    height: 22px;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--bg2) 0px 16px,
+      transparent 16px 28px
+    );
+    border-bottom: 3px solid var(--red);
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .filmstrip::before {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 8px;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--bg4) 0px 12px,
+      transparent 12px 22px
+    );
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(180deg, #16000a 0%, var(--bg) 100%);
+    padding: 28px 40px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    position: relative;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--red), transparent);
+  }
+  .logo-icon {
+    width: 52px; height: 52px;
+    background: var(--red);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    box-shadow: 0 0 28px var(--red-glow);
+    flex-shrink: 0;
+  }
+  .logo-text h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.2rem;
+    letter-spacing: 3px;
+    color: #fff;
+    line-height: 1;
+  }
+  .logo-text span {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .badge {
+    margin-left: auto;
+    background: linear-gradient(135deg, var(--red-dark), var(--red));
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    box-shadow: 0 0 18px var(--red-glow);
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 32px 24px 60px;
+  }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-size: 0.68rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--red);
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── CONTROL BAR ── */
+  .controls-bar {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+  .ctrl-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .ctrl-label {
+    font-size: 0.65rem;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  select, input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border 0.2s, box-shadow 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  select {
+    padding-right: 36px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%237a7a9a' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    cursor: pointer;
+    min-width: 200px;
+  }
+  select:focus, input:focus {
+    border-color: var(--red);
+    box-shadow: 0 0 0 3px var(--red-glow);
+  }
+  input { width: 80px; text-align: center; }
+
+  .btn {
+    padding: 10px 22px;
+    border-radius: 8px;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.18s;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn-ghost:hover { border-color: var(--muted); background: var(--bg3); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--red-dark) 0%, var(--red) 100%);
+    color: #fff;
+    box-shadow: 0 4px 18px var(--red-glow);
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 26px var(--red-glow);
+  }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-danger {
+    background: transparent;
+    border: 1px solid rgba(232,34,42,0.3);
+    color: var(--red);
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+  .btn-danger:hover { background: rgba(232,34,42,0.1); }
+
+  .spacer { flex: 1; }
+
+  /* ── TABLE ── */
+  .table-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+  }
+  thead th {
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    padding: 13px 16px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  thead th:first-child { width: 200px; }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg3); }
+  tbody td { padding: 10px 12px; }
+  tbody td input {
+    width: 100%;
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 7px 10px;
+  }
+  tbody td input:focus {
+    background: var(--bg4);
+    border-color: var(--red);
+    box-shadow: 0 0 0 3px var(--red-glow);
+    border-radius: 6px;
+  }
+  tbody td:last-child { text-align: center; }
+  .user-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* ── RESULTS GRID ── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .result-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.18s, border-color 0.18s;
+    animation: fadeUp 0.35s ease both;
+  }
+  .result-card:hover { transform: translateY(-3px); border-color: rgba(232,34,42,0.4); }
+  @keyframes fadeUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: none; } }
+  .result-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .result-card .rc-name {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .result-card .rc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .result-card .rc-label {
+    font-size: 0.68rem;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .result-card .rc-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--text);
+    font-weight: 500;
+  }
+  .rc-val.highlight { color: var(--gold); }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    padding: 18px 24px;
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+  .stat-item { display: flex; flex-direction: column; gap: 4px; }
+  .stat-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 1px;
+    color: var(--red);
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 0.68rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .stat-divider {
+    width: 1px;
+    background: var(--border);
+    align-self: stretch;
+  }
+
+  /* ── GANTT ── */
+  .gantt-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .gantt-head {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .gantt-head-title {
+    font-size: 0.72rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .gantt-body { padding: 16px 20px 20px; overflow-x: auto; }
+  .gantt-track {
+    display: flex;
+    height: 52px;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    min-width: max-content;
+  }
+  .gantt-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1px;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.78rem;
+    position: relative;
+    border-right: 2px solid rgba(0,0,0,0.4);
+    transition: filter 0.15s;
+    min-width: 38px;
+    cursor: default;
+  }
+  .gantt-block:hover { filter: brightness(1.25); }
+  .gantt-block:last-child { border-right: none; }
+  .gantt-block .gb-label { font-size: 0.72rem; font-weight: 700; }
+  .gantt-block .gb-dur { font-size: 0.6rem; opacity: 0.7; font-family: 'DM Mono', monospace; }
+  .gantt-ruler {
+    display: flex;
+    margin-top: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    min-width: max-content;
+  }
+  .gantt-tick { text-align: center; }
+  .gantt-idle { background: var(--bg4); color: var(--muted); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--muted);
+  }
+  .empty-state .es-icon { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.9rem; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 28px; right: 28px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--red);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 0.85rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.3s cubic-bezier(.34,1.56,.64,1);
+    z-index: 999;
+    max-width: 300px;
+  }
+  .toast.show { transform: none; opacity: 1; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width:600px) {
+    header { padding: 18px 16px; }
+    .main { padding: 20px 14px 50px; }
+    .controls-bar { padding: 16px; gap: 10px; }
+    .stats-bar { gap: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="filmstrip"></div>
+
+<header>
+  <div class="logo-icon">🎬</div>
+  <div class="logo-text">
+    <h1>CineQueue</h1>
+    <span>Movie Ticket Booking Scheduler</span>
+  </div>
+  <div class="badge">⚡ Live Sim</div>
+</header>
+
+<div class="main">
+
+  <!-- ALGORITHM + CONTROLS -->
+  <div class="section-label">Scheduling Engine</div>
+  <div class="controls-bar">
+    <div class="ctrl-group">
+      <span class="ctrl-label">Algorithm</span>
+      <select id="algo">
+        <option value="fcfs">🎟 FCFS – First Come First Served</option>
+        <option value="sjf">⚡ SJF – Shortest Job First</option>
+        <option value="srtf">🔄 SRTF – Shortest Remaining Time First (Preemptive)</option>
+        <option value="priority">🏆 Priority Scheduling (Preemptive)</option>
+      </select>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn btn-ghost" onclick="addRow()">＋ Add User</button>
+    <button class="btn btn-primary" onclick="run()">▶ Run Scheduler</button>
+  </div>
+
+  <!-- QUEUE TABLE -->
+  <div class="section-label">Booking Queue</div>
+  <div class="table-card">
+    <div class="table-scroll">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th>👤 User Name</th>
+            <th>⏱ Arrival Time</th>
+            <th>⏳ Burst Time</th>
+            <th>⭐ Priority</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-section" style="display:none">
+    <div class="section-label">Performance Metrics</div>
+    <div id="stats" class="stats-bar"></div>
+
+    <div class="section-label">Per-User Results</div>
+    <div id="out" class="results-grid"></div>
+
+    <div class="section-label">Gantt Chart</div>
+    <div class="gantt-wrap">
+      <div class="gantt-head">
+        <span style="font-size:1rem">📊</span>
+        <span class="gantt-head-title">Execution Timeline</span>
+      </div>
+      <div class="gantt-body">
+        <div id="gantt"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EMPTY STATE (shown before run) -->
+  <div id="empty" class="empty-state">
+    <div class="es-icon">🍿</div>
+    <p>Set up your booking queue and hit <strong>Run Scheduler</strong> to see results.</p>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── COLORS ──
+const PALETTE = [
+  '#e8222a','#f5a623','#27ae60','#2980b9',
+  '#8e44ad','#16a085','#d35400','#c0392b',
+  '#1abc9c','#2c3e50'
+];
+const AVATAR_BG = [
+  '#e8222a22','#f5a62322','#27ae6022','#2980b922',
+  '#8e44ad22','#16a08522','#d3540022'
+];
+
+let rowCount = 0;
+const DEFAULT_USERS = [
+  { name: 'Alice', at: 0, bt: 4, p: 3 },
+  { name: 'Bob',   at: 1, bt: 2, p: 1 },
+  { name: 'Carol', at: 2, bt: 5, p: 2 },
+];
+
+function colorFor(i) { return PALETTE[i % PALETTE.length]; }
+
+function addRow(name='User', at=0, bt=1, p=3) {
+  const tb = document.querySelector('#tbl tbody');
+  const i  = tb.rows.length;
+  const c  = colorFor(i);
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>
+      <div class="user-name-cell">
+        <div class="avatar" style="background:${c}33;color:${c}">${(name[0]||'U').toUpperCase()}</div>
+        <input value="${name}" oninput="refreshAvatar(this)">
+      </div>
+    </td>
+    <td><input type="number" min="0" value="${at}"></td>
+    <td><input type="number" min="1" value="${bt}"></td>
+    <td><input type="number" min="1" value="${p}"></td>
+    <td><button class="btn btn-danger" onclick="removeRow(this)">✕</button></td>
+  `;
+  tb.appendChild(tr);
+  rowCount++;
+}
+
+function refreshAvatar(inp) {
+  const av = inp.closest('.user-name-cell').querySelector('.avatar');
+  av.textContent = (inp.value[0] || 'U').toUpperCase();
+}
+
+function removeRow(btn) {
+  btn.closest('tr').remove();
+  toast('User removed from queue');
+}
+
+function getData() {
+  const rows = document.querySelectorAll('#tbl tbody tr');
+  return [...rows].map((tr,i) => {
+    const cells = tr.querySelectorAll('input');
+    return {
+      pid:      cells[0].value || `User${i+1}`,
+      at:       Math.max(0, +cells[1].value || 0),
+      bt:       Math.max(1, +cells[2].value || 1),
+      priority: Math.max(1, +cells[3].value || 1),
+      color:    colorFor(i)
+    };
+  });
+}
+
+function run() {
+  const ps = getData();
+  if (!ps.length) { toast('⚠ Add at least one user first!'); return; }
+  const a = document.getElementById('algo').value;
+  let res;
+  if      (a==='fcfs')     res = fcfs(ps);
+  else if (a==='sjf')      res = sjf(ps);
+  else if (a==='srtf')     res = srtf(ps);
+  else                     res = priority(ps);
+  renderResults(res, ps);
+  document.getElementById('results-section').style.display = '';
+  document.getElementById('empty').style.display = 'none';
+  toast('✅ Scheduling complete!');
+}
+
+// ── ALGORITHMS ──
+function fcfs(ps) {
+  const sorted = [...ps].sort((a,b)=>a.at-b.at);
+  let t=0, g=[], r=[];
+  for (const p of sorted) {
+    if (t < p.at) t = p.at;
+    const s = t; t += p.bt;
+    r.push({...p, ct:t, tat:t-p.at, wt:t-p.at-p.bt, rt:s-p.at});
+    g.push({pid:p.pid, d:p.bt, color:p.color});
+  }
+  return {r,g};
+}
+
+function sjf(ps) {
+  const procs = ps.map(x=>({...x,f:false}));
+  let done=0, t=0, g=[], r=[];
+  while (done < procs.length) {
+    const avail = procs.filter(x=>x.at<=t&&!x.f);
+    if (!avail.length) { t++; continue; }
+    avail.sort((a,b)=>a.bt-b.bt);
+    const p = avail[0], s=t; t+=p.bt; p.f=true; done++;
+    r.push({...p,ct:t,tat:t-p.at,wt:t-p.at-p.bt,rt:s-p.at});
+    g.push({pid:p.pid,d:p.bt,color:p.color});
+  }
+  return {r,g};
+}
+
+function srtf(ps) { return preemptive(ps,false); }
+function priority(ps) { return preemptive(ps,true); }
+
+function preemptive(ps, usePrio) {
+  const procs = ps.map(x=>({...x,rem:x.bt,ct:0,rt:null}));
+  let t=0, c=0, seq=[];
+  while (c < procs.length) {
+    const avail = procs.filter(x=>x.at<=t&&x.rem>0);
+    if (!avail.length) { seq.push(null); t++; continue; }
+    avail.sort((a,b)=> usePrio
+      ? (a.priority!==b.priority ? a.priority-b.priority : a.rem-b.rem)
+      : (a.rem!==b.rem ? a.rem-b.rem : a.at-b.at)
+    );
+    const p = avail[0];
+    if (p.rt===null) p.rt = t-p.at;
+    seq.push(p); p.rem--; t++;
+    if (!p.rem) { p.ct=t; c++; }
+  }
+  // compress Gantt
+  const g=[]; let cur=seq[0], d=1;
+  for (let i=1;i<seq.length;i++) {
+    if (seq[i]===cur) { d++; }
+    else {
+      g.push(cur ? {pid:cur.pid,d,color:cur.color} : {pid:'Idle',d,color:null});
+      cur=seq[i]; d=1;
+    }
+  }
+  if (cur) g.push(cur ? {pid:cur.pid,d,color:cur.color} : {pid:'Idle',d,color:null});
+  const r = procs.map(p=>({
+    pid:p.pid,at:p.at,bt:p.bt,priority:p.priority,color:p.color,
+    ct:p.ct,tat:p.ct-p.at,wt:p.ct-p.at-p.bt,rt:p.rt
+  }));
+  return {r,g};
+}
+
+// ── RENDER ──
+function renderResults({r,g}, ps) {
+  // Stats bar
+  const n   = r.length;
+  const avgTAT = (r.reduce((a,x)=>a+x.tat,0)/n).toFixed(2);
+  const avgWT  = (r.reduce((a,x)=>a+x.wt,0)/n).toFixed(2);
+  const avgRT  = (r.reduce((a,x)=>a+x.rt,0)/n).toFixed(2);
+  const maxCT  = Math.max(...r.map(x=>x.ct));
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-item">
+      <span class="stat-val">${maxCT}</span>
+      <span class="stat-label">Total Time Units</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-val">${avgTAT}</span>
+      <span class="stat-label">Avg Turnaround</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-val">${avgWT}</span>
+      <span class="stat-label">Avg Wait Time</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-val">${avgRT}</span>
+      <span class="stat-label">Avg Response</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-val">${n}</span>
+      <span class="stat-label">Users Served</span>
+    </div>
+  `;
+
+  // Result cards
+  const out = document.getElementById('out');
+  out.innerHTML = '';
+  r.forEach((p,i) => {
+    const div = document.createElement('div');
+    div.className='result-card';
+    div.style.setProperty('--c', p.color);
+    div.style.animationDelay = `${i*0.06}s`;
+    div.style.cssText += `--c:${p.color}`;
+    div.querySelector ? null : null;
+    div.innerHTML = `
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${p.color};border-radius:14px 14px 0 0;"></div>
+      <div class="rc-name">
+        <div class="avatar" style="background:${p.color}33;color:${p.color};width:26px;height:26px;font-size:0.65rem">${p.pid[0].toUpperCase()}</div>
+        ${p.pid}
+      </div>
+      <div class="rc-row"><span class="rc-label">Completion</span><span class="rc-val">${p.ct}</span></div>
+      <div class="rc-row"><span class="rc-label">Turnaround</span><span class="rc-val highlight">${p.tat}</span></div>
+      <div class="rc-row"><span class="rc-label">Wait Time</span><span class="rc-val">${p.wt}</span></div>
+      <div class="rc-row"><span class="rc-label">Response</span><span class="rc-val">${p.rt}</span></div>
+    `;
+    out.appendChild(div);
+  });
+
+  // Gantt
+  const gantt = document.getElementById('gantt');
+  const total = g.reduce((a,b)=>a+b.d, 0);
+  let html = `<div class="gantt-track">`;
+  g.forEach((b,i) => {
+    const flex = Math.max(b.d, 0.5);
+    const isIdle = !b.color;
+    html += `<div class="gantt-block ${isIdle?'gantt-idle':''}"
+      style="flex:${flex};${isIdle?'':`background:${b.color};`}"
+      title="${b.pid} – ${b.d} unit(s)">
+      <span class="gb-label">${b.pid}</span>
+      <span class="gb-dur">${b.d}u</span>
+    </div>`;
+  });
+  html += `</div>`;
+  // Ruler
+  html += `<div class="gantt-ruler">`;
+  let tick = 0;
+  g.forEach(b => {
+    const w = `${(b.d/total*100).toFixed(1)}%`;
+    html += `<div class="gantt-tick" style="flex:${b.d};min-width:${Math.max(b.d,0.5)*20}px">${tick}</div>`;
+    tick += b.d;
+  });
+  html += `<div class="gantt-tick" style="flex:0;min-width:20px">${tick}</div>`;
+  html += `</div>`;
+
+  gantt.innerHTML = html;
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ── INIT ──
+DEFAULT_USERS.forEach(u => addRow(u.name, u.at, u.bt, u.p));
+</script>
+</body>
+</html>
