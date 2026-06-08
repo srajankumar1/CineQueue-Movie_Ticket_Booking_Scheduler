@@ -157,19 +157,19 @@ text Alice  ↓ Bob Arrives  ↓ Bob Executes  ↓ Alice Resumes
 
 ### Completion Time
 
-text CT = Time when process completes execution 
+CT = Time when process completes execution 
 
 ### Turnaround Time
 
-text TAT = CT − AT 
+TAT = CT − AT 
 
 ### Waiting Time
 
-text WT = TAT − BT 
+WT = TAT − BT 
 
 ### Response Time
 
-text RT = First Execution Time − Arrival Time 
+RT = First Execution Time − Arrival Time 
 
 ---
 
